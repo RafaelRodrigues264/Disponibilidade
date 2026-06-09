@@ -1,0 +1,10 @@
+# Fichas ponto e dados locais — NAO sobem para o GitHub
+*.xls
+*.xlsx
+config.txt
+lancamentos.json
+dashboard.html
+
+# Python
+__pycache__/
+*.pyc
