@@ -6,7 +6,7 @@ Localmente: python servidor.py
 """
 
 import os, json
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
@@ -36,7 +36,7 @@ def api_dados():
         'records':    store['records'],
         'nomes':      store['nomes'],
         'lancamentos': store['lancamentos'],
-        'updated_at': store['updated_at'] or datetime.now().isoformat(),
+        'updated_at': store['updated_at'] or datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -48,7 +48,7 @@ def api_upload():
         return jsonify({'erro': 'Token invalido'}), 401
     store['records']    = data.get('records', [])
     store['nomes']      = data.get('nomes', [])
-    store['updated_at'] = datetime.now().isoformat()
+    store['updated_at'] = datetime.now(timezone.utc).isoformat()
     n = len(store['records'])
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Dados atualizados: {n} condutores")
     return jsonify({'ok': True, 'condutores': n})
@@ -62,7 +62,7 @@ def post_lancamento():
     store['lancamentos'][data['nome']] = {
         'tipo': data['tipo'],
         'dt':   data['dt'],
-        'criado_em': datetime.now().isoformat(),
+        'criado_em': datetime.now(timezone.utc).isoformat(),
     }
     return jsonify({'ok': True})
 
