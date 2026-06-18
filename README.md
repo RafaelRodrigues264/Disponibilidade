@@ -1,6 +1,10 @@
 # Dashboard de Disponibilidade de Motoristas
 
+![Dashboard de Disponibilidade](docs/screenshot.png)
+
 Dashboard web em tempo real para gerenciamento de disponibilidade de motoristas, desenvolvido para empresas de transporte rodoviário de cargas e passageiros.
+
+Desenvolvido e atualmente em uso na transportadora Novorumo, o sistema eliminou o controle manual de jornada em planilhas e reduziu o tempo de verificação de disponibilidade de motoristas de minutos para segundos.
 
 ## Como funciona
 
