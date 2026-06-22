@@ -2,41 +2,132 @@
 
 ![Dashboard de Disponibilidade](docs/screenshot.png)
 
-Dashboard web em tempo real para gerenciamento de disponibilidade de motoristas, desenvolvido para empresas de transporte rodoviário de cargas e passageiros.
-
-Desenvolvido e atualmente em uso na transportadora Novorumo, o sistema eliminou o controle manual de jornada em planilhas e reduziu o tempo de verificação de disponibilidade de motoristas de minutos para segundos.
+Dashboard web em tempo real para gerenciamento de disponibilidade de motoristas, desenvolvido para a transportadora **Novorumo** (Jacareí/SP). Eliminou o controle manual de jornada em planilhas e reduziu o tempo de verificação de disponibilidade de minutos para segundos.
 
 ## Como funciona
 
-1. O sistema lê as fichas ponto exportadas pelo **ATSguiarh**
-2. Calcula automaticamente a **jornada restante** e o **interstício** (período de descanso obrigatório) de cada motorista
-3. Exibe o status operacional de toda a frota em um painel atualizado em tempo real
+O sistema tem duas partes:
 
-## Tecnologias
+### 1. Servidor na nuvem (`servidor.py`)
+Aplicação Flask hospedada no **Railway** que recebe os dados dos motoristas via API e serve o dashboard para todos os usuários via navegador — sem precisar de nenhuma instalação local.
 
-- **Python**
-- **Railway** — hospedagem e deploy contínuo
+### 2. Automação local (`automacao_atslog.py`)
+Script Python que roda na máquina da empresa e automatiza o processo de exportação das fichas ponto do ATSguiarh e envio ao servidor. Roda em loop contínuo com intervalo configurável (padrão: 30 minutos).
 
-## Funcionalidades
+---
 
-- Leitura automática de fichas ponto no formato ATSguiarh
-- Cálculo de jornada e descanso conforme a **Lei 13.103/2015** (Lei do Motorista)
-- Suporte a múltiplos usuários simultâneos
-- Lançamento manual de jornadas
-- Filtros por status operacional e frota
-- Interface web acessível pelo navegador, sem necessidade de instalação
+## Fluxo completo
 
-## Contexto regulatório
+```
+ATSguiarh (sistema de jornada)
+    ↓  automacao_atslog.py faz tudo isso automaticamente:
+    ├─ 1. Calcula jornada dos condutores (2 sindicatos)
+    ├─ 2. Gera e exporta fichas ponto para Excel
+    │       FICHA PONTO - FROTA.xls  (ADI5322 - Novorumo Limeira)
+    │       FICHA PONTO - CITRO.xls  (Sindicato Novo - Banco de Horas)
+    └─ 3. Envia dados ao servidor → dashboard atualizado
+    ↓
+Dashboard web (acessível por qualquer pessoa na empresa via navegador)
+```
 
-O sistema foi desenvolvido considerando as exigências da **Lei 13.103/2015**, que regulamenta a jornada de trabalho dos motoristas profissionais no Brasil, incluindo limites de horas ao volante, intervalos obrigatórios e períodos de descanso entre jornadas.
+---
+
+## Pré-requisitos
+
+- Python 3.x instalado
+- ATSguiarh instalado e aberto na tela principal
+- Conta no Railway com o `servidor.py` em execução
+
+### Instalar dependências (uma vez)
+
+```
+pip install flask xlrd pyautogui pygetwindow pillow
+```
+
+---
+
+## Configuração
+
+### Servidor (Railway)
+1. Crie um projeto no Railway com este repositório
+2. Configure a variável de ambiente `UPLOAD_TOKEN` com uma senha secreta
+3. O Railway sobe o servidor automaticamente via `Procfile`
+
+### Local (`config.txt`)
+Crie o arquivo `config.txt` na pasta do projeto (não vai para o GitHub):
+```
+SERVIDOR_URL=https://seu-app.up.railway.app
+TOKEN=sua_senha_aqui
+```
+
+### Calibração de coordenadas (`calibrar.py`)
+O script de automação clica em botões na tela. As coordenadas padrão são estimativas — você precisa calibrá-las para o seu monitor:
+
+1. Execute `python calibrar.py`
+2. Passe o mouse sobre cada botão indicado no script
+3. Anote os valores X e Y exibidos
+4. Atualize o dicionário `COORDS` no `automacao_atslog.py`
+
+---
 
 ## Como usar
 
-Para rodar localmente:
+### Automação completa (recomendado)
+1. Abra o ATSguiarh na **tela principal** (Monitor de Jornada de Trabalho)
+2. Deixe o dropdown **Período** da Ficha Ponto Simplificada já na posição correta (mostrando "Últimos 7 dias")
+3. Dê duplo clique em `scripts/AUTOMATIZAR.bat`
+4. Pressione ENTER quando pedido
+5. O script roda sozinho, atualizando o dashboard a cada 30 minutos
 
-```bash
-pip install -r requirements.txt
-python servidor.py
+> Para cancelar a qualquer momento: mova o mouse para o **canto superior esquerdo** da tela.
+
+### Só enviar os dados (sem automação do ATSguiarh)
+Se você exportou as fichas ponto manualmente, rode apenas:
+```
+scripts/ATUALIZAR.bat
 ```
 
-Acesse `http://localhost:PORT` no navegador.
+---
+
+## Estrutura de arquivos
+
+```
+ANALISE DE DISPONIBILIDADE/
+├── servidor.py              # Servidor Flask (deploy no Railway)
+├── gerar_dados.py           # Lê os Excel e envia ao servidor
+├── automacao_atslog.py      # Automação do ATSguiarh (loop contínuo)
+├── calibrar.py              # Ferramenta para calibrar coordenadas
+├── requirements.txt         # Dependências do servidor (Flask)
+├── Procfile                 # Comando de start para o Railway
+├── config.txt               # URL e token (não vai ao GitHub)
+├── scripts/
+│   ├── ATUALIZAR.bat        # Só envia os dados ao servidor
+│   └── AUTOMATIZAR.bat      # Roda a automação completa
+└── docs/
+    └── screenshot.png
+```
+
+---
+
+## Regras de negócio
+
+Baseado na **Lei 13.103/2015** (Lei do Motorista):
+
+| Status | Significado |
+|--------|-------------|
+| 🟢 DISPONÍVEL | Motorista pode ser chamado |
+| 🟡 INTERSTÍCIO | Em descanso obrigatório (mínimo 11h entre jornadas) |
+| 🔴 EM JORNADA | Jornada em andamento (máximo 12h) |
+| ⚫ AFASTADO | De férias, atestado ou outro afastamento |
+| ⚪ SEM DADOS | Sem registro no período consultado |
+
+---
+
+## Funcionalidades do dashboard
+
+- Status em tempo real de todos os motoristas da frota
+- Cálculo automático de jornada restante e tempo até disponibilidade
+- Filtros por status e frota (Jacareí / Limeira)
+- Lançamento manual de jornadas (para casos de tablet com defeito)
+- Suporte a múltiplos usuários simultâneos via navegador
+- Atualização automática a cada 30 segundos
