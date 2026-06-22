@@ -195,7 +195,8 @@ def main():
 
     if not employees:
         print("\nNenhum dado encontrado. Verifique os arquivos Excel.")
-        input("Pressione Enter para sair...")
+        try: input("Pressione Enter para sair...")
+        except EOFError: pass
         return
 
     records = []
@@ -214,7 +215,8 @@ def main():
     else:
         print("Falha ao enviar. Verifique os erros acima.")
 
-    input("\nPressione Enter para fechar...")
+    try: input("\nPressione Enter para fechar...")
+    except EOFError: pass
 
 
 if __name__ == '__main__':
